@@ -6,13 +6,42 @@
 }
 
 body {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
     color: #ffffff;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    transition: background 1s ease; 
+}
+
+body.night {
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('nightsky.jpg');
+    background-size: cover;
+}
+
+body.morning {
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('morningsky.jpg');
+    background-size: cover;
+}
+
+body.noon {
+    background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), url('noonsky.jpg');
+    background-size: cover;
+}
+
+body.afternoon {
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('afternoonsky.jpg');
+    background-size: cover;
+}
+
+body.evening {
+    background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('sky.jpg');
+    background-size: cover;
 }
 
 .weather-app {

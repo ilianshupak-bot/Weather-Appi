@@ -1,3 +1,4 @@
+
 const DOM = {
     searchForm: document.getElementById('search-form'),
     searchInput: document.getElementById('search-input'),
@@ -13,6 +14,8 @@ const DOM = {
     windSpeedValue: document.getElementById('wind-speed-value'),
     forecastContainer: document.getElementById('forecast-container')
 };
+
+const DEFAULT_FALLBACK_CITY = 'Sofia';
 
 let isCelsius = true;
 let currentTemperatureC = null;
@@ -32,6 +35,35 @@ const WMO_WEATHER_CODES = {
     71: { text: "Light Snowfall", icon: "fa-snowflake" },
     95: { text: "Thunderstorm", icon: "fa-cloud-bolt" }
 };
+
+function updateBackgroundByTime() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTimeInMinutes = (hours * 60) + minutes;
+
+    document.body.className = '';
+
+    const morningStart = (6 * 60) + 30;   // 06:30
+    const noonStart = 11 * 60;            // 11:00
+    const afternoonStart = (14 * 60) + 30; // 14:30
+    const eveningStart = 17 * 60;         // 17:00
+    const nightStart = 21 * 60;           // 21:00
+
+    if (currentTimeInMinutes >= morningStart && currentTimeInMinutes < noonStart) {
+        document.body.classList.add('morning');
+    } else if (currentTimeInMinutes >= noonStart && currentTimeInMinutes < afternoonStart) {
+        document.body.classList.add('noon');
+    } else if (currentTimeInMinutes >= afternoonStart && currentTimeInMinutes < eveningStart) {
+        document.body.classList.add('afternoon');
+    } else if (currentTimeInMinutes >= eveningStart && currentTimeInMinutes < nightStart) {
+        document.body.classList.add('evening');
+    } else {
+        document.body.classList.add('night');
+    }
+}
+
+updateBackgroundByTime();
 
 function convertToFahrenheit(celsius) {
     return (celsius * 9 / 5) + 32;
@@ -163,4 +195,108 @@ DOM.searchForm.addEventListener('submit', (event) => {
 DOM.unitToggleBtn.addEventListener('click', () => {
     isCelsius = !isCelsius;
     updateWeatherUI();
+});
+
+// Locate button (manual trigger)
+DOM.locateBtn = document.getElementById('locate-btn');
+if (DOM.locateBtn) {
+    DOM.locateBtn.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    fetchWeatherByCoords(latitude, longitude);
+                },
+                (err) => {
+                    displayError('Unable to get your location. Showing default city.');
+                    fetchWeatherData(DEFAULT_FALLBACK_CITY);
+                }
+            );
+        } else {
+            displayError('Geolocation not supported by your browser.');
+            fetchWeatherData(DEFAULT_FALLBACK_CITY);
+        }
+    });
+}
+
+async function fetchWeatherByCoords(latitude, longitude) {
+    showLoading();
+
+    try {
+        // Use Nominatim (OpenStreetMap) for reverse geocoding to avoid CORS issues
+        const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2&accept-language=en`;
+        let currentCity = null;
+        try {
+            const revResp = await fetch(nominatimUrl);
+            if (revResp.ok) {
+                const revData = await revResp.json();
+                // Nominatim may provide a city, town or village in address
+                const addr = revData.address || {};
+                currentCity = addr.city || addr.town || addr.village || addr.hamlet || addr.county || null;
+                const country = addr.country || '';
+                if (currentCity) currentCityNameString = `${currentCity}${country ? ', ' + country : ''}`;
+            }
+        } catch (e) {
+            // ignore and fallback to coords below
+        }
+
+        if (!currentCityNameString) {
+            currentCityNameString = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+        }
+
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=temperature_2m_max,weathercode&timezone=auto`;
+        const weatherResponse = await fetch(weatherUrl);
+        if (!weatherResponse.ok) throw new Error("Failed to fetch weather data from server.");
+
+        const weatherData = await weatherResponse.json();
+
+        currentTemperatureC = weatherData.current_weather.temperature;
+        currentWindSpeed = weatherData.current_weather.windspeed;
+
+        const currentWeatherMeta = getWeatherMeta(weatherData.current_weather.weathercode);
+        DOM.weatherDescription.textContent = currentWeatherMeta.text;
+
+        forecastDaysArray = [];
+        const dailyData = weatherData.daily;
+
+        for (let i = 1; i <= 5; i++) {
+            if (!dailyData.time[i]) break;
+
+            const dateObj = new Date(dailyData.time[i]);
+            const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayMeta = getWeatherMeta(dailyData.weathercode[i]);
+
+            forecastDaysArray.push({
+                dayName: dayOfWeek,
+                maxTemp: dailyData.temperature_2m_max[i],
+                iconClass: dayMeta.icon
+            });
+        }
+
+        hideLoading();
+        updateWeatherUI();
+
+    } catch (error) {
+        displayError(error.message);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                fetchWeatherByCoords(latitude, longitude);
+            },
+            (err) => {
+                // If geolocation fails or is denied, fallback to a default city
+                console.warn('Geolocation failed:', err.message);
+                fetchWeatherData('Sofia');
+            },
+            { timeout: 8000 }
+        );
+    } else {
+        // No geolocation support — fallback to a default city
+        fetchWeatherData('Sofia');
+    }
 });
