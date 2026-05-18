@@ -112,7 +112,7 @@ body.evening {
 
 .main-temp {
     font-size: 2.5rem;
-    color: #f1c40f;
+    color: #000000;
     font-weight: 300;
 }
 
@@ -124,10 +124,10 @@ body.evening {
 }
 
 .feeling-text {
-    font-size: 1.6rem;
+    font-size: 3rem;
     font-weight: 600;
     text-transform: uppercase;
-    color: #2ecc71;
+    color: #feffff;
     margin-bottom: 5px;
 }
 
