@@ -20,27 +20,27 @@ body {
 }
 
 body.night {
-    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('nightsky.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('pictures/nightsky.jpg');
     background-size: cover;
 }
 
 body.morning {
-    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('morningsky.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('pictures/morningsky.jpg');
     background-size: cover;
 }
 
 body.noon {
-    background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), url('noonsky.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), url('pictures/noonsky.jpg');
     background-size: cover;
 }
 
 body.afternoon {
-    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('afternoonsky.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('pictures/afternoon.jpg');
     background-size: cover;
 }
 
 body.evening {
-    background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('sky.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('pictures/sky.jpg');
     background-size: cover;
 }
 
@@ -112,8 +112,8 @@ body.evening {
 
 .main-temp {
     font-size: 2.5rem;
-    color: #000000;
-    font-weight: 300;
+    color: #fffefe;
+    font-weight: 900;
 }
 
 .main-city {
@@ -208,4 +208,34 @@ body.evening {
     border-radius: 10px;
     margin-bottom: 20px;
     color: #ff6b6b;
+}
+.search-history {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: -15px;
+    margin-bottom: 20px;
+}
+
+.history-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.history-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }

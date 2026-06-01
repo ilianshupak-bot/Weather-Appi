@@ -1,5 +1,5 @@
-
 const DOM = {
+    searchHistory: document.getElementById('search-history'),
     searchForm: document.getElementById('search-form'),
     searchInput: document.getElementById('search-input'),
     unitToggleBtn: document.getElementById('unit-toggle'),
@@ -12,7 +12,8 @@ const DOM = {
     weatherFeelingText: document.getElementById('weather-feeling-text'),
     weatherDescription: document.getElementById('weather-description'),
     windSpeedValue: document.getElementById('wind-speed-value'),
-    forecastContainer: document.getElementById('forecast-container')
+    forecastContainer: document.getElementById('forecast-container'),
+    locateBtn: document.getElementById('locate-btn')
 };
 
 const DEFAULT_FALLBACK_CITY = 'Sofia';
@@ -44,11 +45,11 @@ function updateBackgroundByTime() {
 
     document.body.className = '';
 
-    const morningStart = (6 * 60) + 30;   // 06:30
-    const noonStart = 11 * 60;            // 11:00
-    const afternoonStart = (14 * 60) + 30; // 14:30
-    const eveningStart = 17 * 60;         // 17:00
-    const nightStart = 21 * 60;           // 21:00
+    const morningStart = (6 * 60) + 30;   
+    const noonStart = 11 * 60;            
+    const afternoonStart = (14 * 60) + 30; 
+    const eveningStart = 17 * 60;         
+    const nightStart = 21 * 60;           
 
     if (currentTimeInMinutes >= morningStart && currentTimeInMinutes < noonStart) {
         document.body.classList.add('morning');
@@ -64,6 +65,7 @@ function updateBackgroundByTime() {
 }
 
 updateBackgroundByTime();
+setInterval(updateBackgroundByTime, 60 * 1000); // проверява всяка минута дали трябва да смени фона
 
 function convertToFahrenheit(celsius) {
     return (celsius * 9 / 5) + 32;
@@ -81,6 +83,7 @@ function getWeatherMeta(code) {
 }
 
 function showLoading() {
+    DOM.unitToggleBtn.disabled = true;
     DOM.loadingContainer.style.display = "block";
     DOM.errorContainer.style.display = "none";
     DOM.weatherDashboard.style.display = "none";
@@ -108,6 +111,7 @@ function updateWeatherUI() {
     DOM.windSpeedValue.textContent = currentWindSpeed.toFixed(1);
     DOM.weatherFeelingText.textContent = calculateWeatherFeeling(currentTemperatureC);
     DOM.unitToggleBtn.textContent = isCelsius ? "Switch to °F" : "Switch to °C";
+    DOM.unitToggleBtn.disabled = false;
 
     DOM.forecastContainer.innerHTML = "";
 
@@ -175,6 +179,7 @@ async function fetchWeatherData(cityName) {
             });
         }
 
+        saveToHistory(name);
         hideLoading();
         updateWeatherUI();
 
@@ -183,62 +188,25 @@ async function fetchWeatherData(cityName) {
     }
 }
 
-DOM.searchForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const targetCity = DOM.searchInput.value.trim();
-    
-    if (targetCity) {
-        fetchWeatherData(targetCity);
-    }
-});
-
-DOM.unitToggleBtn.addEventListener('click', () => {
-    isCelsius = !isCelsius;
-    updateWeatherUI();
-});
-
-// Locate button (manual trigger)
-DOM.locateBtn = document.getElementById('locate-btn');
-if (DOM.locateBtn) {
-    DOM.locateBtn.addEventListener('click', () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    fetchWeatherByCoords(latitude, longitude);
-                },
-                (err) => {
-                    displayError('Unable to get your location. Showing default city.');
-                    fetchWeatherData(DEFAULT_FALLBACK_CITY);
-                }
-            );
-        } else {
-            displayError('Geolocation not supported by your browser.');
-            fetchWeatherData(DEFAULT_FALLBACK_CITY);
-        }
-    });
-}
-
 async function fetchWeatherByCoords(latitude, longitude) {
     showLoading();
 
     try {
-        // Use Nominatim (OpenStreetMap) for reverse geocoding to avoid CORS issues
         const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2&accept-language=en`;
         let currentCity = null;
         try {
             const revResp = await fetch(nominatimUrl);
             if (revResp.ok) {
                 const revData = await revResp.json();
-                // Nominatim may provide a city, town or village in address
                 const addr = revData.address || {};
                 currentCity = addr.city || addr.town || addr.village || addr.hamlet || addr.county || null;
                 const country = addr.country || '';
-                if (currentCity) currentCityNameString = `${currentCity}${country ? ', ' + country : ''}`;
+                if (currentCity) {
+                    currentCityNameString = `${currentCity}${country ? ', ' + country : ''}`;
+                    saveToHistory(currentCity);
+                }
             }
-        } catch (e) {
-            // ignore and fallback to coords below
-        }
+        } catch (e) {}
 
         if (!currentCityNameString) {
             currentCityNameString = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
@@ -281,7 +249,70 @@ async function fetchWeatherByCoords(latitude, longitude) {
     }
 }
 
+function renderHistoryUI() {
+    const history = JSON.parse(localStorage.getItem('weatherHistory')) || [];
+    DOM.searchHistory.innerHTML = '';
+    
+    history.forEach(city => {
+        const btn = document.createElement('button');
+        btn.className = 'history-btn';
+        btn.textContent = city;
+        btn.type = 'button';
+        btn.addEventListener('click', () => {
+            DOM.searchInput.value = city;
+            fetchWeatherData(city);
+        });
+        DOM.searchHistory.appendChild(btn);
+    });
+}
+
+function saveToHistory(city) {
+    if (!city) return;
+    let history = JSON.parse(localStorage.getItem('weatherHistory')) || [];
+    history = history.filter(item => item.toLowerCase() !== city.toLowerCase());
+    history.unshift(city);
+    if (history.length > 5) history.pop();
+    localStorage.setItem('weatherHistory', JSON.stringify(history));
+    renderHistoryUI();
+}
+
+DOM.searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const targetCity = DOM.searchInput.value.trim();
+    
+    if (targetCity) {
+        fetchWeatherData(targetCity);
+    }
+});
+
+DOM.unitToggleBtn.addEventListener('click', () => {
+    isCelsius = !isCelsius;
+    updateWeatherUI();
+});
+
+if (DOM.locateBtn) {
+    DOM.locateBtn.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    fetchWeatherByCoords(latitude, longitude);
+                },
+                (err) => {
+                    displayError('Unable to get your location. Showing default city.');
+                    fetchWeatherData(DEFAULT_FALLBACK_CITY);
+                }
+            );
+        } else {
+            displayError('Geolocation not supported by your browser.');
+            fetchWeatherData(DEFAULT_FALLBACK_CITY);
+        }
+    });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+    renderHistoryUI();
+    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -289,14 +320,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 fetchWeatherByCoords(latitude, longitude);
             },
             (err) => {
-                // If geolocation fails or is denied, fallback to a default city
                 console.warn('Geolocation failed:', err.message);
-                fetchWeatherData('Sofia');
+                fetchWeatherData(DEFAULT_FALLBACK_CITY);
             },
             { timeout: 8000 }
         );
     } else {
-        // No geolocation support — fallback to a default city
-        fetchWeatherData('Sofia');
+        fetchWeatherData(DEFAULT_FALLBACK_CITY);
     }
 });
