@@ -44,6 +44,11 @@ body.evening {
     background-size: cover;
 }
 
+.tabpic {
+    background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('tabpicture.png');
+    background-size: cover;
+}
+
 .weather-app {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(15px);
@@ -124,9 +129,9 @@ body.evening {
 }
 
 .feeling-text {
-    font-size: 3rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: capitalize  ;
     color: #feffff;
     margin-bottom: 5px;
 }
@@ -214,7 +219,7 @@ body.evening {
     flex-wrap: wrap;
     gap: 8px;
     justify-content: center;
-    margin-top: -15px;
+    margin-top: 0.2in;
     margin-bottom: 20px;
 }
 
